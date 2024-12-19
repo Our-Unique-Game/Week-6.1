@@ -8,7 +8,7 @@ using UnityEngine.Tilemaps;
 public class Goat : MonoBehaviour {
     [SerializeField] AllowedTiles allowedTiles = null;
 
-    private bool isPickedUp = false; // Tracks whether the goat is picked up.
+    [SerializeField] private bool isPickedUp = false; // Tracks whether the goat is picked up.
 
     /**
      * Handles the player's interaction with the goat.
@@ -47,12 +47,14 @@ public class Goat : MonoBehaviour {
         }
     }
 
-    /**
-     * Resets the allowed tiles back to the default state.
-     */
     private void ResetAllowedTiles() {
-        TileBase[] defaultTiles = { /* Add default tiles here */ };
-        allowedTiles.UpdateAllowedTiles(defaultTiles);
-        Debug.Log("Allowed tiles reset after goat drop.");
+        TileBase[] defaultTiles = allowedTiles.Get();
+        
+        if (allowedTiles != null) {
+            allowedTiles.UpdateAllowedTiles(defaultTiles); // Ensure this method matches the type
+            Debug.Log("Allowed tiles reset after boat drop.");
+        } else {
+            Debug.LogError("AllowedTiles reference is null!");
+        }
     }
 }

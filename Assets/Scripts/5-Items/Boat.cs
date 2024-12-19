@@ -51,8 +51,13 @@ public class Boat : MonoBehaviour {
      * Resets the allowed tiles back to the default state.
      */
     private void ResetAllowedTiles() {
-        TileBase[] defaultTiles = { /* Add default tiles here */ };
-        allowedTiles.UpdateAllowedTiles(defaultTiles);
-        Debug.Log("Allowed tiles reset after boat drop.");
+        TileBase[] defaultTiles = allowedTiles.Get();
+        
+        if (allowedTiles != null) {
+            allowedTiles.UpdateAllowedTiles(defaultTiles); // Ensure this method matches the type
+            Debug.Log("Allowed tiles reset after boat drop.");
+        } else {
+            Debug.LogError("AllowedTiles reference is null!");
+        }
     }
 }

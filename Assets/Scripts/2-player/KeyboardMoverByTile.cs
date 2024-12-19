@@ -25,17 +25,25 @@ public class KeyboardMoverByTile : KeyboardMover {
     /**
      * Updates player movement and handles interactions with items.
      */
-    void Update()  {
+    [SerializeField] private Pickaxe pickaxe = null; // Reference to the pickaxe script
+
+    void Update() {
         Vector3 newPosition = NewPosition();
         TileBase tileOnNewPosition = TileOnPosition(newPosition);
 
         if (allowedTiles.Contains(tileOnNewPosition)) {
             transform.position = newPosition;
+
+            // Interact with items if present
             HandleInteraction(tileOnNewPosition);
-        } else {
-            Debug.LogError("You cannot walk on " + tileOnNewPosition + "!");
+        }
+
+        // Handle pickaxe use
+        if (pickaxe != null && Input.GetKeyDown(KeyCode.Space)) {
+            pickaxe.TryTransformTile(transform.position);
         }
     }
+
 
     /**
      * Handles interactions when the player moves onto a tile with an item.

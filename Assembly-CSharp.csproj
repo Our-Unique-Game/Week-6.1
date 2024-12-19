@@ -68,6 +68,7 @@
     <Compile Include="Assets/Scripts/1-tiles/AllowedTiles.cs" />
     <Compile Include="Assets/Scripts/5-Items/Goat.cs" />
     <Compile Include="Assets/Scripts/3-enemies/Patroller.cs" />
+    <Compile Include="Assets/Scripts/5-Items/Pickaxe.cs" />
     <Compile Include="Assets/Scripts/2-player/ClickMover.cs" />
     <Compile Include="Assets/Scripts/0-bfs/BFS.cs" />
     <Compile Include="Assets/Scripts/3-enemies/Cycle.cs" />
