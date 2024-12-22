@@ -1,82 +1,188 @@
-﻿using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Tilemaps;
 
 /**
- * This component allows the player to move using the arrow keys,
- * but only if the new position is on an allowed tile. 
- * It also handles interactions with items like the boat and goat.
+ * This component allows the player to move, interact with items (goat, boat, pickaxe),
+ * and dynamically update allowed tiles. The pickaxe allows the player to transform tiles.
  */
-public class KeyboardMoverByTile : KeyboardMover {
-    [SerializeField] Tilemap tilemap = null;
-    [SerializeField] AllowedTiles allowedTiles = null;
-    [SerializeField] private bool isCarryingItem = false; // Tracks whether the player is carrying an item.
+public class KeyboardMoverByTile : MonoBehaviour {
+    [SerializeField] Tilemap tilemap = null; // Reference to the Tilemap
+    [SerializeField] AllowedTiles defaultAllowedTiles = null; // Default allowed tiles
+    [SerializeField] AllowedTiles goatAllowedTiles = null; // Goat-specific allowed tiles
+    [SerializeField] AllowedTiles boatAllowedTiles = null; // Boat-specific allowed tiles
+    [SerializeField] AllowedTiles pickaxeAllowedTiles = null; // Pickaxe-specific allowed tiles
+    [SerializeField] TileBase transformFromTile = null; // Tile to be replaced
+    [SerializeField] TileBase transformToTile = null; // Tile to replace with
+
+    private AllowedTiles currentAllowedTiles; // The current combined allowed tiles
+    private GameObject interactableObject = null; // Tracks the item the player is near
+    private bool isGoatPickedUp = false; // Tracks whether the goat is picked up
+    private bool isBoatPickedUp = false; // Tracks whether the boat is picked up
+    private bool isPickaxePickedUp = false; // Tracks whether the pickaxe is picked up
+
+    private void Start() {
+        // Initialize currentAllowedTiles with default tiles
+        currentAllowedTiles = Instantiate(defaultAllowedTiles);
+    }
+
+    private void Update() {
+        HandleMovement();
+        HandleInteraction();
+        HandleTileTransformation();
+    }
 
     /**
-     * Gets the tile at a given world position.
-     * @param worldPosition The world position to check.
-     * @return The TileBase object at the specified position.
+     * Handles player movement based on arrow keys.
      */
+    private void HandleMovement() {
+        Vector3 newPosition = NewPosition();
+        TileBase tileOnNewPosition = TileOnPosition(newPosition);
+
+        if (currentAllowedTiles.Contains(tileOnNewPosition)) {
+            Debug.Log($"Moving to allowed tile: {tileOnNewPosition?.name ?? "null"}");
+            transform.position = newPosition;
+        } else {
+            Debug.Log($"Cannot move to tile: {tileOnNewPosition?.name ?? "null"}");
+        }
+    }
+
+    /**
+     * Handles interactions with nearby items (goat, boat, pickaxe).
+     */
+    private void HandleInteraction() {
+        if (interactableObject != null && Input.GetKeyDown(KeyCode.Space)) {
+            if (interactableObject.CompareTag("Goat")) {
+                ToggleGoatPickup();
+            } else if (interactableObject.CompareTag("Boat")) {
+                ToggleBoatPickup();
+            } else if (interactableObject.CompareTag("Pickaxe")) {
+                TogglePickaxePickup();
+            }
+        }
+    }
+
+    /**
+     * Allows the player to transform tiles if the pickaxe is picked up.
+     */
+    private void HandleTileTransformation() {
+        if (isPickaxePickedUp && Input.GetKeyDown(KeyCode.T)) {
+            Vector3 currentPosition = transform.position;
+            TileBase currentTile = TileOnPosition(currentPosition);
+
+            if (currentTile == transformFromTile) {
+                Vector3Int cellPosition = tilemap.WorldToCell(currentPosition);
+                tilemap.SetTile(cellPosition, transformToTile);
+                Debug.Log($"Transformed tile at {cellPosition} from {transformFromTile?.name} to {transformToTile?.name}");
+            } else {
+                Debug.Log($"Cannot transform tile: Current tile is not {transformFromTile?.name}");
+            }
+        }
+    }
+
+    private void ToggleGoatPickup() {
+        if (!isGoatPickedUp) {
+            isGoatPickedUp = true;
+            AddGoatTiles();
+            Debug.Log("Goat picked up. Tiles updated.");
+        } else {
+            isGoatPickedUp = false;
+            ResetToDefaultTiles();
+            Debug.Log("Goat dropped. Tiles reset to default.");
+        }
+    }
+
+    private void ToggleBoatPickup() {
+        if (!isBoatPickedUp) {
+            isBoatPickedUp = true;
+            AddBoatTiles();
+            Debug.Log("Boat picked up. Tiles updated.");
+        } else {
+            isBoatPickedUp = false;
+            ResetToDefaultTiles();
+            Debug.Log("Boat dropped. Tiles reset to default.");
+        }
+    }
+
+    private void TogglePickaxePickup() {
+        if (!isPickaxePickedUp) {
+            isPickaxePickedUp = true;
+            AddPickaxeTiles();
+            Debug.Log("Pickaxe picked up. Tiles updated.");
+        } else {
+            isPickaxePickedUp = false;
+            ResetToDefaultTiles();
+            Debug.Log("Pickaxe dropped. Tiles reset to default.");
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision) {
+        if (collision.CompareTag("Goat") || collision.CompareTag("Boat") || collision.CompareTag("Pickaxe")) {
+            interactableObject = collision.gameObject;
+            Debug.Log($"Player is in range of {interactableObject.tag}.");
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision) {
+        if (collision.gameObject == interactableObject) {
+            Debug.Log($"Player left the range of {interactableObject.tag}.");
+            interactableObject = null;
+        }
+    }
+
     private TileBase TileOnPosition(Vector3 worldPosition) {
         Vector3Int cellPosition = tilemap.WorldToCell(worldPosition);
         return tilemap.GetTile(cellPosition);
     }
 
-    /**
-     * Updates player movement and handles interactions with items.
-     */
-    [SerializeField] private Pickaxe pickaxe = null; // Reference to the pickaxe script
-
-    void Update() {
-        Vector3 newPosition = NewPosition();
-        TileBase tileOnNewPosition = TileOnPosition(newPosition);
-
-        if (allowedTiles.Contains(tileOnNewPosition)) {
-            transform.position = newPosition;
-
-            // Interact with items if present
-            HandleInteraction(tileOnNewPosition);
-        }
-
-        // Handle pickaxe use
-        if (pickaxe != null && Input.GetKeyDown(KeyCode.Space)) {
-            pickaxe.TryTransformTile(transform.position);
+    private void AddGoatTiles() {
+        if (goatAllowedTiles != null) {
+            currentAllowedTiles.AddAllowedTiles(goatAllowedTiles.Get());
+            Debug.Log("Goat tiles added to current allowed tiles.");
+        } else {
+            Debug.LogError("GoatAllowedTiles is null!");
         }
     }
 
-
-    /**
-     * Handles interactions when the player moves onto a tile with an item.
-     * @param tile The tile that the player has moved onto.
-     */
-    private void HandleInteraction(TileBase tile) {
-        // Example interaction logic:
-        if (tile.name == "Boat") { // Replace with the actual name of the boat tile.
-            Debug.Log("Player picked up the boat!");
-            isCarryingItem = true;
-            UpdateAllowedTilesForBoat();
-        } else if (tile.name == "Goat") { // Replace with the actual name of the goat tile.
-            Debug.Log("Player picked up the goat!");
-            isCarryingItem = true;
-            UpdateAllowedTilesForGoat();
+    private void AddBoatTiles() {
+        if (boatAllowedTiles != null) {
+            currentAllowedTiles.AddAllowedTiles(boatAllowedTiles.Get());
+            Debug.Log("Boat tiles added to current allowed tiles.");
+        } else {
+            Debug.LogError("BoatAllowedTiles is null!");
         }
     }
 
-    /**
-     * Updates allowed tiles for when the player carries the boat.
-     */
-    private void UpdateAllowedTilesForBoat() {
-        TileBase[] newAllowedTiles = { /* Add water and other relevant tiles here */ };
-        allowedTiles.UpdateAllowedTiles(newAllowedTiles);
-        Debug.Log("Allowed tiles updated for carrying the boat.");
+    private void AddPickaxeTiles() {
+        if (pickaxeAllowedTiles != null) {
+            currentAllowedTiles.AddAllowedTiles(pickaxeAllowedTiles.Get());
+            Debug.Log("Pickaxe tiles added to current allowed tiles.");
+        } else {
+            Debug.LogError("PickaxeAllowedTiles is null!");
+        }
     }
 
-    /**
-     * Updates allowed tiles for when the player carries the goat.
-     */
-    private void UpdateAllowedTilesForGoat() {
-        TileBase[] newAllowedTiles = { /* Add grass and other relevant tiles here */ };
-        allowedTiles.UpdateAllowedTiles(newAllowedTiles);
-        Debug.Log("Allowed tiles updated for carrying the goat.");
+    private void ResetToDefaultTiles() {
+        if (defaultAllowedTiles != null) {
+            currentAllowedTiles.UpdateAllowedTiles(defaultAllowedTiles.Get());
+            Debug.Log("Allowed tiles reset to default.");
+        } else {
+            Debug.LogError("DefaultAllowedTiles is null!");
+        }
+    }
+
+    private Vector3 NewPosition() {
+        Vector3 move = Vector3.zero;
+
+        if (Input.GetKeyDown(KeyCode.UpArrow)) {
+            move = Vector3.up;
+        } else if (Input.GetKeyDown(KeyCode.DownArrow)) {
+            move = Vector3.down;
+        } else if (Input.GetKeyDown(KeyCode.LeftArrow)) {
+            move = Vector3.left;
+        } else if (Input.GetKeyDown(KeyCode.RightArrow)) {
+            move = Vector3.right;
+        }
+
+        return transform.position + move;
     }
 }

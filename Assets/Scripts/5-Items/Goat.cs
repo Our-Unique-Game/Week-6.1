@@ -1,20 +1,27 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System.Linq;
 
 /**
  * This component manages the goat's interactions.
  * Handles player pickup, updates allowed tiles for movement, and ensures compatibility with the game system.
  */
 public class Goat : MonoBehaviour {
-    [SerializeField] AllowedTiles allowedTiles = null;
+    [SerializeField] AllowedTiles allowedTiles = null; // Reference to the Goat's AllowedTiles
+    private bool isPickedUp = false; // Tracks whether the goat is picked up.
 
-    [SerializeField] private bool isPickedUp = false; // Tracks whether the goat is picked up.
+    private void OnCollisionEnter2D(Collision2D collision) {
+        if (collision.gameObject.CompareTag("Player")) {
+            OnPlayerInteraction(collision.gameObject);
+        }
+    }
 
-    /**
-     * Handles the player's interaction with the goat.
-     * Updates allowed tiles when the goat is picked up.
-     * @param player The GameObject interacting with the goat.
-     */
+    private void Update() {
+        if (Input.GetKeyDown(KeyCode.G)) { // Debug key for testing pickup
+            TogglePickup();
+        }
+    }
+
     public void OnPlayerInteraction(GameObject player) {
         if (!isPickedUp) {
             Debug.Log("Goat picked up by player!");
@@ -25,20 +32,24 @@ public class Goat : MonoBehaviour {
         }
     }
 
-    /**
-     * Updates the allowed tiles to include goat-friendly terrain when picked up.
-     */
     private void UpdateAllowedTilesForGoat() {
-        TileBase[] goatAllowedTiles = { /* Add specific tiles here (e.g., grass) */ };
-        allowedTiles.UpdateAllowedTiles(goatAllowedTiles);
-        Debug.Log("Allowed tiles updated for goat movement.");
+        if (allowedTiles != null) {
+            TileBase[] goatAllowedTiles = allowedTiles.Get();
+
+            // Get the player's AllowedTiles component
+            AllowedTiles playerAllowedTiles = GameObject.FindWithTag("Player").GetComponent<AllowedTiles>();
+
+            if (playerAllowedTiles != null) {
+                playerAllowedTiles.AddAllowedTiles(goatAllowedTiles);
+                Debug.Log("Goat's tiles added to player's allowed tiles.");
+            } else {
+                Debug.LogError("Player's AllowedTiles component is missing!");
+            }
+        } else {
+            Debug.LogError("Goat's AllowedTiles reference is null!");
+        }
     }
 
-    /**
-     * Resets the goat's state when dropped by the player.
-     * Updates allowed tiles back to the default state.
-     * @param player The GameObject dropping the goat.
-     */
     public void OnPlayerDrop(GameObject player) {
         if (isPickedUp) {
             Debug.Log("Goat dropped by player.");
@@ -48,13 +59,29 @@ public class Goat : MonoBehaviour {
     }
 
     private void ResetAllowedTiles() {
-        TileBase[] defaultTiles = allowedTiles.Get();
-        
         if (allowedTiles != null) {
-            allowedTiles.UpdateAllowedTiles(defaultTiles); // Ensure this method matches the type
-            Debug.Log("Allowed tiles reset after boat drop.");
+            // Get the player's AllowedTiles component
+            AllowedTiles playerAllowedTiles = GameObject.FindWithTag("Player").GetComponent<AllowedTiles>();
+
+            if (playerAllowedTiles != null) {
+                playerAllowedTiles.ResetToDefaultTiles();
+                Debug.Log("Player's allowed tiles reset to default.");
+            } else {
+                Debug.LogError("Player's AllowedTiles component is missing!");
+            }
         } else {
-            Debug.LogError("AllowedTiles reference is null!");
+            Debug.LogError("Goat's AllowedTiles reference is null!");
+        }
+    }
+
+    public void TogglePickup() {
+        isPickedUp = !isPickedUp;
+        if (isPickedUp) {
+            Debug.Log("Goat picked up via debug button.");
+            UpdateAllowedTilesForGoat();
+        } else {
+            Debug.Log("Goat dropped via debug button.");
+            ResetAllowedTiles();
         }
     }
 }

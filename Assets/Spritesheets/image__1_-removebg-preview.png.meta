@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: adaaa3b33a2954afa9c7561492064dad
+guid: 3b868d1849472d843a327d6d73aadb9b
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5767979402959795215
-    second: onHorse_0
+      213: 5320217907925429753
+    second: image__1_-removebg-preview_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: onHorse_0
+      name: image__1_-removebg-preview_0
       rect:
         serializedVersion: 2
-        x: 57
-        y: 68
-        width: 376
-        height: 409
+        x: 0
+        y: 0
+        width: 72
+        height: 72
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f043039f4bafb0050800000000000000
-      internalID: 5767979402959795215
+      spriteID: 9fd2191eff535d940800000000000000
+      internalID: 5320217907925429753
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      onHorse_0: 5767979402959795215
+      image__1_-removebg-preview_0: 5320217907925429753
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
